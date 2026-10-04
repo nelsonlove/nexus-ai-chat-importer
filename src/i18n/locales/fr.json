@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "Parcourir les dossiers ou en créer un nouveau"
             },
+            "write_reports": {
+                "name": "Écrire les rapports d'importation",
+                "desc": "Créer les notes de synthèse et d'index dans le dossier des rapports après chaque importation"
+            },
             "attachment_folder": {
                 "name": "Dossier des pièces jointes",
                 "desc": "Où les pièces jointes sont stockées (⚠️ Exclure de la synchronisation pour économiser de l'espace)",

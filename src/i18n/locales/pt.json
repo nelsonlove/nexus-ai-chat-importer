@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "Procurar pastas ou criar uma nova"
             },
+            "write_reports": {
+                "name": "Escrever relatórios de importação",
+                "desc": "Criar as notas de resumo e de índice na pasta de relatórios após cada importação"
+            },
             "attachment_folder": {
                 "name": "Pasta de anexos",
                 "desc": "Local onde os anexos são guardados (⚠️ Excluir da sincronização para poupar espaço)",

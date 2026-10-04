@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "Ordner durchsuchen oder neuen erstellen"
             },
+            "write_reports": {
+                "name": "Importberichte schreiben",
+                "desc": "Nach jedem Import die Zusammenfassungs- und Indexnotizen im Berichtsordner anlegen"
+            },
             "attachment_folder": {
                 "name": "Anhangsordner",
                 "desc": "Speicherort für Anhänge (⚠️ Von der Synchronisierung ausschließen, um Speicherplatz zu sparen)",

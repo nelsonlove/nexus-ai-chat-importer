@@ -23,6 +23,8 @@ export interface PluginSettings {
     // ========================================
     conversationFolder: string;
     reportFolder: string;
+    // Write the import summary and index notes into reportFolder after each import.
+    writeImportReports: boolean;
     attachmentFolder: string;
 
     // ========================================

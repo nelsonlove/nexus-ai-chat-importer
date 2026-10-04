@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "Browse folders or create a new one"
             },
+            "write_reports": {
+                "name": "Write import reports",
+                "desc": "Create the import summary and index notes in the reports folder after each import"
+            },
             "attachment_folder": {
                 "name": "Attachment folder",
                 "desc": "Where attachments are stored (⚠️ Exclude from sync to save space)",
