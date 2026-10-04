@@ -1240,6 +1240,12 @@ export default class NexusAiChatImporterPlugin extends Plugin {
         isSelectiveImport?: boolean,
         ignoredArchives?: IgnoredArchiveInfo[]
     ): Promise<string> {
+        // Reports turned off: write nothing. Callers treat an empty path as
+        // "no report" and show the plain completion notice instead.
+        if (!this.settings.writeImportReports) {
+            return "";
+        }
+
         const reportFolder = this.settings.reportFolder;
         const providerRegistry = createProviderRegistry(this);
         const adapter = providerRegistry.getAdapter(provider);

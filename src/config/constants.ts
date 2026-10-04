@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     // ========================================
     conversationFolder: "Nexus/Conversations",
     reportFolder: "Nexus/Reports",
+    writeImportReports: true,
     attachmentFolder: "Nexus/Attachments",
 
     // ========================================
