@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "Sfoglia le cartelle o creane una nuova"
             },
+            "write_reports": {
+                "name": "Scrivi i report di importazione",
+                "desc": "Crea le note di riepilogo e di indice nella cartella dei report dopo ogni importazione"
+            },
             "attachment_folder": {
                 "name": "Cartella degli allegati",
                 "desc": "Dove vengono archiviati gli allegati (⚠️ Escludere dalla sincronizzazione per risparmiare spazio)",

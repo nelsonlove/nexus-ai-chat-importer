@@ -185,6 +185,10 @@
                 "placeholder": "Nexus Reports",
                 "browse_tooltip": "浏览文件夹或新建文件夹"
             },
+            "write_reports": {
+                "name": "生成导入报告",
+                "desc": "每次导入后在报告文件夹中创建摘要和索引笔记"
+            },
             "attachment_folder": {
                 "name": "附件文件夹",
                 "desc": "附件存放位置（⚠️ 请将其排除在同步范围之外以节省空间）",

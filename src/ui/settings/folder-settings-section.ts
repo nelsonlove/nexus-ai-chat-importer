@@ -69,13 +69,38 @@ export class FolderSettingsSection extends BaseSettingsSection {
     readonly order = 20;
 
     protected rows(): SectionRow[] {
-        return FOLDERS.map((folder) => ({
-            name: t(`settings.folders.${folder.i18n}.name`),
-            desc: t(`settings.folders.${folder.i18n}.desc`),
-            aliases: ["folder", "path", "directory", "location"],
-            cls: "nexus-folder-path-setting",
-            render: (setting) => this.renderFolder(setting, folder),
-        }));
+        return FOLDERS.flatMap((folder) => {
+            const row: SectionRow = {
+                name: t(`settings.folders.${folder.i18n}.name`),
+                desc: t(`settings.folders.${folder.i18n}.desc`),
+                aliases: ["folder", "path", "directory", "location"],
+                cls: "nexus-folder-path-setting",
+                render: (setting) => this.renderFolder(setting, folder),
+            };
+            // The on/off switch for reports sits under the folder they go to.
+            return folder.key === "reportFolder"
+                ? [row, this.writeReportsRow()]
+                : [row];
+        });
+    }
+
+    /** Whether an import writes its summary and index notes at all. */
+    private writeReportsRow(): SectionRow {
+        return {
+            name: t("settings.folders.write_reports.name"),
+            desc: t("settings.folders.write_reports.desc"),
+            aliases: ["report", "reports", "summary", "index"],
+            render: (setting) => {
+                setting.addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.writeImportReports)
+                        .onChange(async (value) => {
+                            this.plugin.settings.writeImportReports = value;
+                            await this.plugin.saveSettings();
+                        })
+                );
+            },
+        };
     }
 
     /** A read-only path field and its Browse button. */
