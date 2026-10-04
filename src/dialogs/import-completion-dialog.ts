@@ -87,7 +87,10 @@ export class ImportCompletionDialog extends Modal {
         }
 
         // Report link section
-        this.createReportSection(contentEl);
+        // No report was written when import reports are turned off.
+        if (this.reportFilePath) {
+            this.createReportSection(contentEl);
+        }
 
         // The donation dialog follows on close when due: one ask, not two.
         if (!this.openDonationOnClose) {
@@ -327,14 +330,16 @@ export class ImportCompletionDialog extends Modal {
             "action-buttons nexus-dialog-actions"
         );
 
-        // View Report button
-        const viewReportBtn = buttonContainer.createEl("button", {
-            text: t("import_completion.buttons.view_report"),
-        });
-        viewReportBtn.addEventListener("click", () => {
-            void this.openReport();
-            this.close();
-        });
+        // View Report button, only when a report was written
+        if (this.reportFilePath) {
+            const viewReportBtn = buttonContainer.createEl("button", {
+                text: t("import_completion.buttons.view_report"),
+            });
+            viewReportBtn.addEventListener("click", () => {
+                void this.openReport();
+                this.close();
+            });
+        }
 
         // OK button
         const okBtn = buttonContainer.createEl("button", {

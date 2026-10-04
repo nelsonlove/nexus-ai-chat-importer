@@ -636,7 +636,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
                 );
 
                 // Show completion dialog with 0 imports
-                if (reportPath) {
+                if (this.shouldShowCompletion(reportPath)) {
                     this.showImportCompletionDialog(
                         operationReport,
                         reportPath
@@ -700,7 +700,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
                 forceReprocess
             );
 
-            // Write the consolidated report (always, even if some files failed)
+            // Write the consolidated report (always when reports are on, even if some files failed)
             const reportPath = await this.writeConsolidatedReport(
                 operationReport,
                 provider,
@@ -712,7 +712,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
             );
 
             // Show completion dialog
-            if (reportPath) {
+            if (this.shouldShowCompletion(reportPath)) {
                 this.showImportCompletionDialog(operationReport, reportPath);
             } else {
                 // Fallback if report writing failed
@@ -917,7 +917,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
             provider,
             mobileFiles
         );
-        if (reportPath) {
+        if (this.shouldShowCompletion(reportPath)) {
             this.showImportCompletionDialog(operationReport, reportPath);
         } else {
             new Notice(
@@ -1054,7 +1054,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
                 );
 
                 // Show completion dialog with 0 imports
-                if (reportPath) {
+                if (this.shouldShowCompletion(reportPath)) {
                     this.showImportCompletionDialog(
                         operationReport,
                         reportPath
@@ -1140,7 +1140,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
                     true,
                     ignoredArchives
                 );
-                if (reportPath) {
+                if (this.shouldShowCompletion(reportPath)) {
                     this.showImportCompletionDialog(
                         operationReport,
                         reportPath
@@ -1192,7 +1192,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
                 forceReprocess
             );
 
-            // Write the consolidated report (always, even if some files failed)
+            // Write the consolidated report (always when reports are on, even if some files failed)
             const reportPath = await this.writeConsolidatedReport(
                 operationReport,
                 provider,
@@ -1204,7 +1204,7 @@ export default class NexusAiChatImporterPlugin extends Plugin {
             );
 
             // Show completion dialog
-            if (reportPath) {
+            if (this.shouldShowCompletion(reportPath)) {
                 this.showImportCompletionDialog(operationReport, reportPath);
             } else {
                 // Fallback if report writing failed
@@ -1240,8 +1240,8 @@ export default class NexusAiChatImporterPlugin extends Plugin {
         isSelectiveImport?: boolean,
         ignoredArchives?: IgnoredArchiveInfo[]
     ): Promise<string> {
-        // Reports turned off: write nothing. Callers treat an empty path as
-        // "no report" and show the plain completion notice instead.
+        // Reports turned off: write nothing. Callers still show the
+        // completion dialog (see shouldShowCompletion), without a report link.
         if (!this.settings.writeImportReports) {
             return "";
         }
@@ -1489,6 +1489,15 @@ ${report.generateMobileIndexContent(files, links)}
         const tailMatch = stem.match(/([A-Za-z0-9]{4})$/);
         const tail = tailMatch ? tailMatch[1] : stem.slice(-4);
         return `${head}...${tail}.zip`;
+    }
+
+    /**
+     * Whether an import ends in the completion dialog. An empty path means
+     * the report could not be written, unless reports are turned off, in
+     * which case the dialog opens without a report link.
+     */
+    private shouldShowCompletion(reportPath: string): boolean {
+        return reportPath !== "" || !this.settings.writeImportReports;
     }
 
     /**

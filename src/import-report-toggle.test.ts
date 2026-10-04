@@ -97,4 +97,20 @@ describe("import report toggle", () => {
             `${DEFAULT_SETTINGS.reportFolder}/chatgpt/`
         );
     });
+
+    it("still ends in the completion dialog when reports are off", () => {
+        const shouldShow = (
+            NexusAiChatImporterPlugin.prototype as unknown as {
+                shouldShowCompletion: (reportPath: string) => boolean;
+            }
+        ).shouldShowCompletion;
+
+        // Off: no report, but the dialog still opens.
+        expect(shouldShow.call(fakePlugin(false), "")).toBe(true);
+        // On: an empty path means the write failed, so the fallback notice.
+        expect(shouldShow.call(fakePlugin(true), "")).toBe(false);
+        expect(shouldShow.call(fakePlugin(true), "Nexus/Reports/x.md")).toBe(
+            true
+        );
+    });
 });
