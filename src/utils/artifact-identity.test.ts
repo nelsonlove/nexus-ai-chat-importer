@@ -79,7 +79,17 @@ describe("artifactIdentityLines", () => {
     });
 
     it("refuses a property name that clashes or does not validate", () => {
-        for (const name of ["aliases", "version_uuid", "Type", "a b", "1x"]) {
+        for (const name of [
+            "aliases",
+            "version_uuid",
+            "Type",
+            "cssclasses",
+            "publish",
+            "null",
+            "Yes",
+            "a b",
+            "1x",
+        ]) {
             const lines = artifactIdentityLines(
                 { artifactUidProperty: name, artifactToolUseIdProperty: name },
                 "toolu_01FakeId"
@@ -103,6 +113,9 @@ describe("artifactIdentityLines", () => {
         ).toBe("");
         expect(
             artifactIdentityLines({ artifactNoteType: "Note/" }, undefined)
+        ).toBe("");
+        expect(
+            artifactIdentityLines({ artifactNoteType: "yes" }, undefined)
         ).toBe("");
     });
 });

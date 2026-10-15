@@ -29,7 +29,9 @@
  *   tool call the artifact came from (`toolu_…`), under its own name, so that
  *   it never has to stand in for a note id.
  *
- * Each is set in data.json; an empty or invalid value writes nothing.
+ * Each is set in data.json. An option writes nothing when its value is empty
+ * or invalid, when its name repeats a key the note already has (or the other
+ * option's name), or, for the tool-use id, when the artifact has none.
  */
 
 /** A property name: usable unquoted in YAML and stable across writes. */
@@ -58,7 +60,30 @@ const ARTIFACT_KEYS = new Set([
     "format",
     "aliases",
     "type",
+    // Properties Obsidian or Obsidian Publish give a meaning of their own.
     "tags",
+    "tag",
+    "alias",
+    "cssclasses",
+    "cssclass",
+    "publish",
+    "permalink",
+    "description",
+    "image",
+    "cover",
+]);
+
+/** Words YAML 1.1 reads as a boolean or null rather than as text. */
+const YAML_KEYWORDS = new Set([
+    "true",
+    "false",
+    "yes",
+    "no",
+    "on",
+    "off",
+    "y",
+    "n",
+    "null",
 ]);
 
 export interface ArtifactIdentitySettings {
@@ -103,6 +128,7 @@ function resolveName(raw: string | undefined): string | null {
     const name = (raw ?? "").trim();
     if (!VALID_NAME.test(name)) return null;
     if (ARTIFACT_KEYS.has(name.toLowerCase())) return null;
+    if (YAML_KEYWORDS.has(name.toLowerCase())) return null;
     return name;
 }
 
@@ -120,7 +146,7 @@ export function artifactIdentityLines(
     let lines = "";
 
     const type = (settings.artifactNoteType ?? "").trim();
-    if (VALID_TYPE.test(type)) {
+    if (VALID_TYPE.test(type) && !YAML_KEYWORDS.has(type.toLowerCase())) {
         lines += `type: ${type}\n`;
     }
 
