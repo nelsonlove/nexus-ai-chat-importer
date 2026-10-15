@@ -34,6 +34,7 @@ import { isExportableClaudeMessage } from "./claude-message-filter";
 import { generateSafeAlias, generateConversationFileName } from "../../utils";
 import type NexusAiChatImporterPlugin from "../../main";
 import { splitLines } from "../../utils";
+import { artifactIdentityLines } from "../../utils/artifact-identity";
 
 type ArtifactInput = {
     _format?: string;
@@ -1439,6 +1440,12 @@ export class ClaudeConverter {
                 ? new Date(artifactCreateTime * 1000).toISOString()
                 : "unknown";
 
+        // Extra identity properties (type, note uid, tool-use id); "" when off
+        const identityLines = artifactIdentityLines(
+            this.plugin.settings ?? {},
+            artifactInput?._blockId
+        );
+
         // Create markdown content with enhanced frontmatter
         let markdownContent = `---
 nexus: nexus-ai-chat-importer
@@ -1451,7 +1458,7 @@ command: ${command}
 conversation_id: ${conversationId || "unknown"}
 create_time: ${createTimeStr}
 format: ${language}
-aliases: [${safeArtifactTitle}, ${safeArtifactAlias}]
+${identityLines}aliases: [${safeArtifactTitle}, ${safeArtifactAlias}]
 ---
 
 # ${title} (Version ${versionNumber})
