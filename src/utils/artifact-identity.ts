@@ -29,6 +29,12 @@
  *   tool call the artifact came from (`toolu_…`), under its own name, so that
  *   it never has to stand in for a note id.
  *
+ * - `artifactVaultKeyNames`: when true, four of the artifact's own keys take
+ *   the vault's names: `plugin-version`, `version-uuid`, `conversation-id`,
+ *   and `created` (local time with its offset) in place of `create_time`
+ *   (UTC). The dedupe check reads `version_uuid` and `version-uuid` alike,
+ *   so notes written either way are still matched.
+ *
  * Each is set in data.json. An option writes nothing when its value is empty
  * or invalid, when its name repeats a key the note already has (or the other
  * option's name), or, for the tool-use id, when the artifact has none.
@@ -60,6 +66,11 @@ const ARTIFACT_KEYS = new Set([
     "format",
     "aliases",
     "type",
+    // The same keys under the vault's names (artifactVaultKeyNames).
+    "plugin-version",
+    "version-uuid",
+    "conversation-id",
+    "created",
     // Properties Obsidian or Obsidian Publish give a meaning of their own.
     "tags",
     "tag",
@@ -87,6 +98,7 @@ const YAML_KEYWORDS = new Set([
 ]);
 
 export interface ArtifactIdentitySettings {
+    artifactVaultKeyNames?: boolean;
     artifactNoteType?: string;
     artifactUidProperty?: string;
     artifactToolUseIdProperty?: string;
@@ -169,4 +181,60 @@ export function artifactIdentityLines(
     }
 
     return lines;
+}
+
+/** The names of the artifact's own keys that a vault may rename. */
+export interface ArtifactKeyNames {
+    pluginVersion: string;
+    versionUuid: string;
+    conversationId: string;
+    /** `create_time` (UTC) or `created` (local time with its offset). */
+    createTime: string;
+}
+
+export function artifactKeyNames(
+    settings: ArtifactIdentitySettings
+): ArtifactKeyNames {
+    return settings.artifactVaultKeyNames === true
+        ? {
+              pluginVersion: "plugin-version",
+              versionUuid: "version-uuid",
+              conversationId: "conversation-id",
+              createTime: "created",
+          }
+        : {
+              pluginVersion: "plugin_version",
+              versionUuid: "version_uuid",
+              conversationId: "conversation_id",
+              createTime: "create_time",
+          };
+}
+
+/**
+ * The version UUID line of an existing artifact note, under either name, so
+ * that notes written with or without artifactVaultKeyNames dedupe alike.
+ */
+export const VERSION_UUID_LINE = /^[ \t]*version[_-]uuid:[ \t]*(.+?)[ \t]*$/m;
+
+/**
+ * An ISO 8601 date-time in the machine's local time with its UTC offset,
+ * to the second, e.g. `2026-08-01T00:08:55-04:00`. `offsetMinutes` is what
+ * `Date.getTimezoneOffset()` returns (minutes behind UTC); injectable so
+ * tests do not depend on the machine's time zone.
+ */
+export function localIsoWithOffset(
+    epochSeconds: number,
+    offsetMinutes: number = new Date(epochSeconds * 1000).getTimezoneOffset()
+): string {
+    const local = new Date((epochSeconds - offsetMinutes * 60) * 1000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ahead = -offsetMinutes;
+    const sign = ahead >= 0 ? "+" : "-";
+    const abs = Math.abs(ahead);
+    return (
+        `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-` +
+        `${pad(local.getUTCDate())}T${pad(local.getUTCHours())}:` +
+        `${pad(local.getUTCMinutes())}:${pad(local.getUTCSeconds())}` +
+        `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+    );
 }

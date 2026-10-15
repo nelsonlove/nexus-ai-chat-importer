@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { artifactIdentityLines, uuidv7 } from "./artifact-identity";
+import {
+    artifactIdentityLines,
+    artifactKeyNames,
+    localIsoWithOffset,
+    uuidv7,
+    VERSION_UUID_LINE,
+} from "./artifact-identity";
+import { TFile } from "obsidian";
 import { ClaudeConverter } from "../providers/claude/claude-converter";
 
 const UUID_V7 =
@@ -130,11 +137,20 @@ describe("Claude artifact note frontmatter", () => {
         child: () => logger,
     };
     let written: Record<string, string>;
+    let warnings: unknown[];
 
     function useSettings(settings: Record<string, unknown>) {
         written = {};
+        warnings = [];
+        const files: Record<string, TFile> = {};
         ClaudeConverter.setPlugin({
-            logger,
+            logger: {
+                ...logger,
+                child: () => ({
+                    ...logger,
+                    warn: (...args: unknown[]) => warnings.push(args),
+                }),
+            },
             manifest: { version: "0.0.0-test" },
             settings: {
                 conversationFolder: "Chats",
@@ -146,7 +162,13 @@ describe("Claude artifact note frontmatter", () => {
                 vault: {
                     create: async (path: string, content: string) => {
                         written[path] = content;
+                        files[path] = new TFile();
+                        (files[path] as unknown as { path: string }).path =
+                            path;
                     },
+                    getAbstractFileByPath: (path: string) =>
+                        files[path] ?? null,
+                    read: async (file: { path: string }) => written[file.path],
                 },
             },
         } as never);
@@ -178,6 +200,20 @@ describe("Claude artifact note frontmatter", () => {
             1_700_000_100
         );
         return written["Attachments/made-up-recipe_v1.md"];
+    }
+
+    async function isSkipped(versionUuid: string): Promise<boolean> {
+        return (
+            ClaudeConverter as unknown as {
+                shouldSkipArtifactVersion: (
+                    path: string,
+                    uuid: string
+                ) => Promise<boolean>;
+            }
+        ).shouldSkipArtifactVersion(
+            "Attachments/made-up-recipe_v1.md",
+            versionUuid
+        );
     }
 
     function frontmatter(note: string): string {
@@ -214,5 +250,118 @@ describe("Claude artifact note frontmatter", () => {
         const a = /^uid: (.*)$/m.exec(await writeArtifact())?.[1];
         const b = /^uid: (.*)$/m.exec(await writeArtifact())?.[1];
         expect(a).not.toBe(b);
+    });
+
+    it("keeps the stock key names when artifactVaultKeyNames is off", async () => {
+        const fm = frontmatter(await writeArtifact());
+        expect(fm).toMatch(/^plugin_version: "0\.0\.0-test"$/m);
+        expect(fm).toMatch(/^version_uuid: toolu_01MadeUpForTests$/m);
+        expect(fm).toMatch(
+            /^conversation_id: 00000000-0000-4000-8000-000000000001$/m
+        );
+        expect(fm).toMatch(/^create_time: 2023-11-14T22:15:00\.000Z$/m);
+        expect(fm).not.toMatch(
+            /^(plugin-version|version-uuid|conversation-id|created):/m
+        );
+    });
+
+    it("writes the vault's key names when artifactVaultKeyNames is on", async () => {
+        useSettings({ ...VAULT, artifactVaultKeyNames: true });
+        const fm = frontmatter(await writeArtifact());
+        expect(fm).toMatch(/^plugin-version: "0\.0\.0-test"$/m);
+        expect(fm).toMatch(/^version-uuid: toolu_01MadeUpForTests$/m);
+        expect(fm).toMatch(
+            /^conversation-id: 00000000-0000-4000-8000-000000000001$/m
+        );
+        const created = /^created: (.*)$/m.exec(fm)?.[1];
+        expect(created).toMatch(
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/
+        );
+        // Same instant as the message time (1_700_000_100 s)
+        expect(Date.parse(created as string)).toBe(1_700_000_100_000);
+        expect(fm).not.toMatch(
+            /^(plugin_version|version_uuid|conversation_id|create_time):/m
+        );
+        expect(fm).toMatch(/^tool-use-id: toolu_01MadeUpForTests$/m);
+        const keys = fm
+            .split("\n")
+            .slice(1)
+            .map((l) => /^([^\s:]+):/.exec(l)?.[1])
+            .filter(Boolean);
+        expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it("still matches an existing note on a re-import, under either name", async () => {
+        for (const vaultKeys of [false, true]) {
+            useSettings({ ...VAULT, artifactVaultKeyNames: vaultKeys });
+            await writeArtifact();
+            expect(await isSkipped("toolu_01MadeUpForTests")).toBe(true);
+            // A match is silent; only a different version warns.
+            expect(warnings).toHaveLength(0);
+            expect(await isSkipped("toolu_01SomeOtherMadeUpId")).toBe(true);
+            expect(warnings).toHaveLength(1);
+        }
+    });
+});
+
+describe("artifactKeyNames", () => {
+    it("is the stock names unless the option is exactly true", () => {
+        for (const v of [undefined, false, "true" as unknown as boolean]) {
+            expect(artifactKeyNames({ artifactVaultKeyNames: v })).toEqual({
+                pluginVersion: "plugin_version",
+                versionUuid: "version_uuid",
+                conversationId: "conversation_id",
+                createTime: "create_time",
+            });
+        }
+        expect(artifactKeyNames({ artifactVaultKeyNames: true })).toEqual({
+            pluginVersion: "plugin-version",
+            versionUuid: "version-uuid",
+            conversationId: "conversation-id",
+            createTime: "created",
+        });
+    });
+
+    it("keeps the option's names out of the identity properties", () => {
+        for (const name of ["plugin-version", "version-uuid", "created"]) {
+            expect(
+                artifactIdentityLines(
+                    { artifactUidProperty: name },
+                    "toolu_01FakeId"
+                )
+            ).toBe("");
+        }
+    });
+});
+
+describe("VERSION_UUID_LINE", () => {
+    it("reads either spelling", () => {
+        for (const key of ["version_uuid", "version-uuid"]) {
+            const note = `---\nnexus: x\n${key}: toolu_01FakeId\nformat: text\n---\n`;
+            expect(VERSION_UUID_LINE.exec(note)?.[1]).toBe("toolu_01FakeId");
+        }
+    });
+
+    it("reads nothing from other keys", () => {
+        expect(VERSION_UUID_LINE.exec("---\nversion: 1\n---\n")).toBeNull();
+    });
+});
+
+describe("localIsoWithOffset", () => {
+    const t = Date.UTC(2026, 7, 1, 4, 8, 55) / 1000;
+
+    it("writes local time with a negative offset", () => {
+        expect(localIsoWithOffset(t, 240)).toBe("2026-08-01T00:08:55-04:00");
+    });
+
+    it("writes local time with a positive or half-hour offset", () => {
+        expect(localIsoWithOffset(t, -330)).toBe("2026-08-01T09:38:55+05:30");
+        expect(localIsoWithOffset(t, 0)).toBe("2026-08-01T04:08:55+00:00");
+    });
+
+    it("names the same instant whatever the offset", () => {
+        for (const offset of [240, -330, 0, 600]) {
+            expect(Date.parse(localIsoWithOffset(t, offset))).toBe(t * 1000);
+        }
     });
 });

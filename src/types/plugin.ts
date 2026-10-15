@@ -46,6 +46,9 @@ export interface PluginSettings {
     customIdPropertyOverwrite: boolean;
     // Artifact notes (set in data.json; empty = off). See
     // src/utils/artifact-identity.ts.
+    // Write plugin-version, version-uuid, conversation-id and created
+    // (local time with offset) in place of the stock key names.
+    artifactVaultKeyNames: boolean;
     // Value written as `type:` on each artifact note.
     artifactNoteType: string;
     // Property that gets a fresh UUIDv7 per artifact note.
