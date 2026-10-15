@@ -34,6 +34,12 @@ import { isExportableClaudeMessage } from "./claude-message-filter";
 import { generateSafeAlias, generateConversationFileName } from "../../utils";
 import type NexusAiChatImporterPlugin from "../../main";
 import { splitLines } from "../../utils";
+import {
+    artifactIdentityLines,
+    artifactKeyNames,
+    localIsoWithOffset,
+    VERSION_UUID_LINE,
+} from "../../utils/artifact-identity";
 
 type ArtifactInput = {
     _format?: string;
@@ -1439,19 +1445,36 @@ export class ClaudeConverter {
                 ? new Date(artifactCreateTime * 1000).toISOString()
                 : "unknown";
 
+        // Extra identity properties (type, note uid, tool-use id); "" when off
+        const identitySettings = this.plugin.settings ?? {};
+        const identityLines = artifactIdentityLines(
+            identitySettings,
+            artifactInput?._blockId
+        );
+
+        // Key names: stock, or the vault's (artifactVaultKeyNames)
+        const keys = artifactKeyNames(identitySettings);
+        let createTimeLine = `${keys.createTime}: ${createTimeStr}\n`;
+        if (keys.createTime === "created") {
+            // Local time with its offset; no line when the time is unknown
+            createTimeLine =
+                artifactCreateTime > 0
+                    ? `created: ${localIsoWithOffset(artifactCreateTime)}\n`
+                    : "";
+        }
+
         // Create markdown content with enhanced frontmatter
         let markdownContent = `---
 nexus: nexus-ai-chat-importer
-plugin_version: "${this.plugin.manifest.version}"
+${keys.pluginVersion}: "${this.plugin.manifest.version}"
 provider: claude
 artifact_id: ${artifactId}
-version_uuid: ${versionUuid}
+${keys.versionUuid}: ${versionUuid}
 version_number: ${versionNumber}
 command: ${command}
-conversation_id: ${conversationId || "unknown"}
-create_time: ${createTimeStr}
-format: ${language}
-aliases: [${safeArtifactTitle}, ${safeArtifactAlias}]
+${keys.conversationId}: ${conversationId || "unknown"}
+${createTimeLine}format: ${language}
+${identityLines}aliases: [${safeArtifactTitle}, ${safeArtifactAlias}]
 ---
 
 # ${title} (Version ${versionNumber})
@@ -1541,7 +1564,8 @@ aliases: [${safeArtifactTitle}, ${safeArtifactAlias}]
     private static extractVersionUuidFromArtifactContent(
         content: string
     ): string | null {
-        const match = content.match(/^\s*version_uuid:\s*(.+)\s*$/m);
+        // Either spelling: version_uuid (stock) or version-uuid (vault)
+        const match = content.match(VERSION_UUID_LINE);
         if (!match) {
             return null;
         }

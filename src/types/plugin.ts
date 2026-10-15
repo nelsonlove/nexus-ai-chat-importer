@@ -44,6 +44,17 @@ export interface PluginSettings {
     customIdProperty: string;
     // Whether an existing value under that name is replaced.
     customIdPropertyOverwrite: boolean;
+    // Artifact notes (set in data.json; empty = off). See
+    // src/utils/artifact-identity.ts.
+    // Write plugin-version, version-uuid, conversation-id and created
+    // (local time with offset) in place of the stock key names.
+    artifactVaultKeyNames: boolean;
+    // Value written as `type:` on each artifact note.
+    artifactNoteType: string;
+    // Property that gets a fresh UUIDv7 per artifact note.
+    artifactUidProperty: string;
+    // Property that gets the Claude tool-use id (`toolu_…`).
+    artifactToolUseIdProperty: string;
 
     // ========================================
     // 🔧 INTERNAL SETTINGS (not shown in UI)

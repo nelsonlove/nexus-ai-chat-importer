@@ -43,6 +43,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     // ========================================
     customIdProperty: "",
     customIdPropertyOverwrite: false,
+    artifactVaultKeyNames: false,
+    artifactNoteType: "",
+    artifactUidProperty: "",
+    artifactToolUseIdProperty: "",
 
     // ========================================
     // 🔧 INTERNAL SETTINGS
